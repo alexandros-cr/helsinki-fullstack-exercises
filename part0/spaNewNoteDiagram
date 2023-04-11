@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant browser
+    participant server
+    
+    browser->>server: POST https://studies.cs.helsinki.fi/exampleapp/new_note_spa
+    Note right of browser: POST request body contains new note in JSON format.
+    activate server
+    server-->>browser: json-formatted confirmation of new note creation
+    deactivate server
