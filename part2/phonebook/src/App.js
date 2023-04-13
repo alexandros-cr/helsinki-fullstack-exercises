@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import axios from 'axios';
 
 import Person from "./Person";
 import InputNumber from "./InputNumber";
+import personsService from './services/persons';
 
 function SearchFilter ({ searchStr, setSearchStr}) {
   return (
@@ -21,14 +21,23 @@ function AddPerson({persons, setPersons, newName, setNewName, newNumber, setNewN
     
     const duplicate = persons.find(person => person.name === newName);
     
-    if(duplicate) alert(`${newName} already exists in the phonebook`);
-    else {
-      const newPerson = { 
-        name: newName,
-        number: newNumber
-       };
-      setPersons(persons.concat(newPerson));
+    if(duplicate) {
+      alert(`${newName} already exists in the phonebook`);
+      return;
     }
+
+    const newPerson = { 
+      name: newName,
+      number: newNumber
+    };
+
+    personsService
+      .addEntry(newPerson)
+      .then(response => {
+        setPersons(persons.concat(response));
+        setNewName('');
+        setNewNumber('');
+      });
   };
   return (
     <form onSubmit={submitHandler}>
@@ -41,14 +50,29 @@ function AddPerson({persons, setPersons, newName, setNewName, newNumber, setNewN
   );
 };
 
-function Persons({ persons, searchStr }) {
+function Persons({ persons, setPersons, searchStr }) {
   let regex = new RegExp(searchStr.toLowerCase());
   let filteredPersons = searchStr ? 
     persons.filter(person => regex.test(person.name.toLowerCase()))
     : persons;
+  
+  const generateDelHandler = (person) => {
+    const id = person.id;
+    const deleteHandler = () => {
+      personsService
+      .deleteEntry(id)
+      .then(response => {
+        personsService
+          .getAll()
+          .then(response => setPersons(response))
+      });
+    }
+    return deleteHandler;
+  };
+  
   return (
     <div>
-      {filteredPersons.map(person => <Person key={person.name} person={person} />)}
+      {filteredPersons.map(person => <Person key={person.name} person={person}  deleteHandler={generateDelHandler(person)}/>)}
     </div>
   );
 }
@@ -60,13 +84,9 @@ function App() {
   const [searchStr, setSearchStr] = useState('');
 
   useEffect(() => {
-    console.log('effect');
-    axios
-      .get('http://localhost:3001/persons')
-      .then((response) => {
-        console.log('promise fulfilled');
-        setPersons(response.data);
-      });
+    personsService
+      .getAll()
+      .then(response => setPersons(response));
   }, []);
 
   return (
@@ -79,7 +99,7 @@ function App() {
                  newNumber={newNumber} setNewNumber={setNewNumber} 
       />
       <h2>Numbers</h2>
-      <Persons persons={persons} searchStr={searchStr} />
+      <Persons persons={persons} searchStr={searchStr} setPersons={setPersons}/>
     </div>
   );
 }

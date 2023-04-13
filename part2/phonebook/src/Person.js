@@ -1,5 +1,8 @@
-export default function Person ({ person }) {
+export default function Person ({ person, deleteHandler }) {
     return (
-        <p>{person.name}: {person.number}</p>
+        <div>
+            <p>{person.name}: {person.number}</p>
+            <button onClick={deleteHandler}>delete</button>
+        </div>
     );
 }
